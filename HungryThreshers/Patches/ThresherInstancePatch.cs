@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EquinoxsModUtils;
 using HarmonyLib;
 using UnityEngine;
 
@@ -13,20 +14,35 @@ namespace HungryThreshers.Patches
         [HarmonyPatch(typeof(ThresherInstance), "UpdateCrafting")]
         [HarmonyPrefix]
         private static void clearOutputsForCrafting(ThresherInstance __instance) {
+            Inventory inputInventory = __instance.GetInputInventory();
+            if (inputInventory.myStacks[0].isEmpty) return;
+            
             Inventory outputInventory = __instance.GetOutputInventory();
-            if (!outputInventory.myStacks[0].isEmpty && !outputInventory.myStacks[1].isEmpty) {
-                if (outputInventory.myStacks[0].count >= 490 && outputInventory.myStacks[1].count >= 490) {
-                    if (HungryThreshersPlugin.PauseIfBothFull.Value) {
-                        return;
-                    }
+            SchematicsRecipeData recipe = ModUtils.TryFindThresherRecipe(inputInventory.myStacks[0].id);
+
+            if (isSlotFull(__instance, 0) && isSlotFull(__instance, 1)) {
+                if (HungryThreshersPlugin.PauseIfBothFull.Value) {
+                    return;
                 }
             }
 
-            for(int i = 0; i < outputInventory.myStacks.Count(); i++) {
-                if (!outputInventory.myStacks[i].isEmpty && outputInventory.myStacks[i].count >= 490) {
-                    outputInventory.RemoveResourcesFromSlot(i, 10);
+            for (int i = 0; i < outputInventory.myStacks.Count(); i++) {
+                if(isSlotFull(__instance, i)) {
+                    outputInventory.RemoveResourcesFromSlot(i, recipe.outputQuantities[i]);
                 }
             }
+        }
+
+        private static bool isSlotFull(ThresherInstance __instance, int index) {
+            Inventory inputInventory = __instance.GetInputInventory();
+            Inventory outputInventory = __instance.GetOutputInventory();
+            SchematicsRecipeData recipe = ModUtils.TryFindThresherRecipe(inputInventory.myStacks[0].id);
+
+            if (outputInventory.myStacks[index].isEmpty) return false;
+
+            int toCraft = recipe.outputQuantities[index];
+            int threshold = outputInventory.myStacks[index].maxStack - toCraft;
+            return outputInventory.myStacks[index].count >= threshold;
         }
     }
 }

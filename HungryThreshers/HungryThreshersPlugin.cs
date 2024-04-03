@@ -14,7 +14,7 @@ namespace HungryThreshers
     {
         private const string MyGUID = "com.equinox.HungryThreshers";
         private const string PluginName = "HungryThreshers";
-        private const string VersionString = "1.1.0";
+        private const string VersionString = "1.2.0";
 
         private const string PauseIfBothFullKey = "PauseIfBothFull";
         public static ConfigEntry<bool> PauseIfBothFull;
